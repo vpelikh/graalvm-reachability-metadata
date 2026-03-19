@@ -28,6 +28,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RoundRobinPartitioner;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.serialization.BooleanDeserializer;
 import org.apache.kafka.common.serialization.BooleanSerializer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -75,6 +76,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KafkaClientsTest {
@@ -282,7 +284,10 @@ class KafkaClientsTest {
         consumerProperties.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
         consumerProperties.put(SaslConfigs.SASL_JAAS_CONFIG, "org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin-pass;");
         try (KafkaConsumer consumer = new KafkaConsumer<>(consumerProperties)) {
-            assertThat(consumer).isNotNull();
+            // Attempt to perform an operation requiring authentication
+            assertThatThrownBy(() -> consumer.partitionsFor("non-existent-topic"))
+                    .isInstanceOf(AuthenticationException.class)
+                    .isNotInstanceOf(UnsupportedOperationException.class);
         }
     }
 
@@ -296,7 +301,10 @@ class KafkaClientsTest {
         consumerProperties.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
         consumerProperties.put(SaslConfigs.SASL_JAAS_CONFIG, "org.apache.kafka.common.security.scram.ScramLoginModule required username=admin password=admin-pass;");
         try (KafkaConsumer consumer = new KafkaConsumer<>(consumerProperties)) {
-            assertThat(consumer).isNotNull();
+            // Attempt to perform an operation requiring authentication
+            assertThatThrownBy(() -> consumer.partitionsFor("non-existent-topic"))
+                    .isInstanceOf(AuthenticationException.class)
+                    .isNotInstanceOf(UnsupportedOperationException.class);
         }
     }
 
